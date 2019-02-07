@@ -43,6 +43,8 @@ minilib/minilib.h:
 	mv minilib-master minilib
 	make rebuild
 
+install: calc
+	cp calc /usr/local/bin
 
 ifdef undef
 		Not tested. 
