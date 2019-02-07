@@ -6,10 +6,8 @@ Cant believe it's working.
 And it's tiny - 8k at OSX, compiled statically with minilib (optional)
 
 
-(C) Misc Myer, 2013-2019.
 Redistribute as you wish, 
-but you are required to drop me an email:
-misc.myer@zoho.com
+but you are required to drop me an email.
 Thanks in advance.
 
 I don't guarantee any function, by the way.
@@ -25,11 +23,12 @@ L R 		Shift left / right
 =				1, if equal
 
 
-All operations are in int mode, so .. 
+All operations are in integer mode, so no floating point yet.
 Originally I did want to have some sort of scripting available for config files.
 Today I needed the XOR; so I did the port to OSX x64.
 Branches aren't thoroughly tested.
 
 Happy hacking
 
-Michael (misc) 
+Michael (Misc) Myer, 2013-2019
+misc.myer@zoho.com

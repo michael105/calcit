@@ -36,7 +36,6 @@ endif
 
 getminilib: minilib/minilib.h
 
-
 minilib/minilib.h:
 	$(info get minilib)
 	curl https://codeload.github.com/michael105/minilib/zip/master > minilib.zip
