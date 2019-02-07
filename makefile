@@ -5,15 +5,44 @@ PROG=calc
 # Don't create obj files, include evrything in one gcc run.
 #SINGLERUN=1 
 
+
+ifdef with-minilib
+include minilib/makefile.include 
+endif
+
 #Compile with minilib or
-include minilib/makefile.include
+default: 
+	$(if $(wildcard minilib/makefile.include), make with-minilib=1, make native )
 
 
 # make native 
 # compile with dynamic loading, os native libs
-native:
+native: calc.c
+	$(info call "make getminilib" to fetch and extract the "minilib" and compile $(PROG) static (recommended) )
 	gcc -o calc calc.c
 
+
+ifndef with-minilib
+
+rebuild:
+	make clean
+	make
+
+clean:
+	rm -f calc
+	cd build && rm -f *.o
+
+endif
+
+getminilib: minilib/minilib.h
+
+
+minilib/minilib.h:
+	$(info get minilib)
+	curl https://codeload.github.com/michael105/minilib/zip/master > minilib.zip
+	unzip minilib.zip
+	mv minilib-master minilib
+	make rebuild
 
 
 ifdef undef
