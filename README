@@ -1,0 +1,35 @@
+#calcit (calc)
+.. a terminal calculator, able to parse nested expressions, branches
+
+The recursive calculation has been a special pain in the ass.
+Cant believe it's working.
+And it's tiny - 8k at OSX, compiled statically with minilib (optional)
+
+
+(C) Misc Myer, 2013-2019.
+Redistribute as you wish, 
+but you are required to drop me an email:
+misc.myer@zoho.com
+Thanks in advance.
+
+I don't guarantee any function, by the way.
+Although I've thoroughly tested.
+
+
+Working: 
++ - * / 
+% ^ $  	( Modulo, Power,  unsigned power-  ipowerui)
+& | ! ~ X (Binary ops: ~ is bitwise not,  X is XOR)
+L R 		Shift left / right
+< >     evals left side / right side, gives smaller / bigger value
+=				1, if equal
+
+
+All operations are in int mode, so .. 
+Originally I did want to have some sort of scripting available for config files.
+Today I needed the XOR; so I did the port to OSX x64.
+Branches aren't thoroughly tested.
+
+Happy hacking
+
+Michael (misc) 
