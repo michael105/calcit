@@ -9,10 +9,11 @@
 //#define mini_write
 //#define mini_read
 #define mini_mprints
-#define mini_mprintf
+#define mini_printf
 //#define mini_perror
 //#define mini_msprintf
-//#define mini_mfprintf
+#define mini_mfprintf
+#define mini_fprintf
 //#define mini_itohex
 #define mini_itodec  // also conversion %d in printf
 #define mini_dtodec 

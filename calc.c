@@ -15,10 +15,12 @@
 #define STANDALONE
 //#define DEBUG
 
+#if 0
 #ifdef DEBUG
-#define dbg(...) printf(__VA_ARGS__)
+#define dbgf(...) printf(__VA_ARGS__)
 #else
-#define dbg(...)
+#define dbgf(...)
+#endif
 #endif
 
 typedef struct _expression { 
@@ -102,12 +104,12 @@ expression* parse(const char*str, expression* exp){
 /// calculates the tokens.
 /// callen by calculate
 int calculate_token(expression *exp, int cv, int n, int rem ){
-		dbg("cv: %d, n: %d, rem: %d\n",cv,n,rem);
+		dbgf("cv: %d, n: %d, rem: %d\n",cv,n,rem);
 		int a;
 		int neg = 0;
 		int t = exp->token[exp->currenttoken];
 		INCTOKEN(exp->currenttoken);
-		dbg("t1: %d\n",t);
+		dbgf("t1: %d\n",t);
 
 		if ( t == -'-' ){ // handle things like 4*(-5) 
 				// syntaxerror if exp->currenttoken>scalar @c (!)
@@ -129,19 +131,19 @@ int calculate_token(expression *exp, int cv, int n, int rem ){
 						}
 								t=exp->token[exp->currenttoken];
 								INCTOKEN(exp->currenttoken);
-								dbg("neg: %d\n",n);
+								dbgf("neg: %d\n",n);
 				} 
 				neg=1;
 		} else if ( t >=0 ){ // got a num. fetch operator.
 				n = t;
 				t = exp->token[exp->currenttoken];
-				dbg("n: %d, t: %c\n",n,-t);
+				dbgf("n: %d, t: %c\n",n,-t);
 				INCTOKEN(exp->currenttoken);
 		} else {
 				switch ( t ){
 						case -'X': { n = *exp->x; if ( neg ) n=-n; //BUG: neg can't be set here.
 				t = exp->token[exp->currenttoken];
-				dbg("x: %d, t: %c\n",n,-t);
+				dbgf("x: %d, t: %c\n",n,-t);
 				INCTOKEN(exp->currenttoken);
 											 }
 				}
@@ -149,9 +151,9 @@ int calculate_token(expression *exp, int cv, int n, int rem ){
 
 
 
-		dbg(": %d%c\n",n,-t);
+		dbgf(": %d%c\n",n,-t);
 		switch ( t ){
-				case -'(': { dbg("Bracket open, neg: %d\n",neg);
+				case -'(': { dbgf("Bracket open, neg: %d\n",neg);
 											 exp->bracketcount++; 
 											 if ( neg ) n = -calculate_loop(exp,cv); 
 											 		else n = calculate_loop(exp,cv); 
@@ -195,13 +197,13 @@ int calculate_loop(expression* exp, int cv){
 		int erg = calculate_token( exp,0,0,0 );
 		while ( (exp->currenttoken < exp->numtoken) && (!exp->bracketflag) ){ // <= ?
 				erg = calculate_token( exp,0,erg,1 );
-				dbg("erg loop, got: %d\n",erg);
+				dbgf("erg loop, got: %d\n",erg);
 		}
 		if ( exp->bracketflag ){
-				dbg("Bracket out, got: %d\n",erg);
+				dbgf("Bracket out, got: %d\n",erg);
 				exp->bracketflag = 0;
 				erg = calculate_token( exp, cv, erg,1);
-				dbg("Bracket cont, got: %d\n",erg);
+				dbgf("Bracket cont, got: %d\n",erg);
 		}
 		return(erg);
 }
@@ -224,8 +226,8 @@ int calculate( expression* exp ){
 
 #ifdef STANDALONE
 int main( int argc, char *argv[] ){
-		dbg("arg: %s\n",argv[1]);
-		dbg("max: %u\n",__INT_MAX__);
+		dbgf("arg: %s\n",argv[1]);
+		dbgf("max: %u\n",__INT_MAX__);
 		// example of howto use..
 		if ( argc < 2 ){
 				printf( "calcit, a tiny text mode calculator\n"
@@ -234,7 +236,13 @@ int main( int argc, char *argv[] ){
 								"You are required to drop me an email, when using this piece of cake.\n"
 								"The recursive parsing and calculation has been a special fun.. ;)\n"
 								"Happy Hacking\n\n"
-								"Usage: calc \"expression\"\n"
+								"Usage: calc \"'expression'\"\n"
+								"\nImplemented operations:\n"
+								" + - / *\n"
+								" % ^ $   -- modulo, square, square unsigned\n"
+								" X & |   -- bitwise XOR, AND, OR, NOT\n"
+								" L R     -- shift bits left, right\n"
+								" < > !   -- branching\n"
 							);
 				return(0);
 		}
