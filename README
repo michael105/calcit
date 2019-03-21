@@ -5,6 +5,8 @@ The recursive calculation has been a special pain in the ass.
 Cant believe it's working.
 And it's tiny - 8k at OSX, compiled statically with minilib (optional)
 
+6.3k linked statically with minilib, linux x64.
+
 
 Redistribute as you wish, 
 but you are required to drop me an email.
@@ -33,6 +35,4 @@ Happy hacking
 
 Michael (Misc) Myer, 2013-2019
 misc.myer@zoho.com
-(my "programming enthusiastic persona".. 
-There are reasons, I have to separate my "images".
-If you'd like to know why, contact me..)
+(my "programming enthusiastic persona"..) 
