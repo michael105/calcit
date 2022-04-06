@@ -89,46 +89,38 @@ int calculate_loop(expression* exp, int cv);
 
 // parsing
 
-// test A for being a Digit( 0..9).
-#define ISDIGIT(A) ( !( A & ( ~(__INT_MAX__) ) || (  A>10) ))
-
-
 // parse input into tokens, write them to exp
-int nexttoken(expression* exp, const char *str, int pos){
-	char c;
-	int a;
+char* nexttoken(expression* exp, char *c ){
 	const static char op[] = { 0, '(', ')', '+', '-', '/', '*', '%', '^' };
+
 	// Weed out space
-	while ( str[pos] == 32 ){
-		pos++;
-		if ( str[pos] == 0 )
-			return(pos);
+	while ( *c == 32 ){
+		c++;
+		if ( !*c )
+			return(c);
 	}
-	c = str[pos];
 
-	a = c - '0';
-	if ISDIGIT(a){ // convert a digit
-		pos++;
-		int b = str[pos] - '0';
-		while ( ( str[pos] != 0 ) && ISDIGIT(b) ){
-			a= a*10 + b;
-			pos++;
-			b = str[pos] - '0';
-		}
-		exp->token[exp->numtoken] = a;
+	// number
+	if ( ( *c >='0' ) && ( *c <='9' ) ){
+		int i = 0; 
+		do {
+			i = i*10 + ( *c - '0' );
+			c++;
+			} while ( ( *c >='0' ) && ( *c <='9' ) );
+		exp->token[exp->numtoken] = i;
 		exp->numtoken++;
-		return( pos );
+		printf("i: %d\n",i);
+		return( c );
 	}
 
-	// got an operator
-	//exp->token[exp->numtoken] = -c; // operators are negativ. 
-
+	// operator
 	int opi = 1;
 
-	while( op[opi] != c ){
+	while( op[opi] != *c ){
 		opi ++;
 		if ( opi >= (sizeof(op)/sizeof(char)) ){
-			printf("Syntaxerror at pos %d, char: %c\n", pos+1, c );
+			//printf("Syntaxerror at pos %d, char: %c\n", 1, *c );
+			printf("Syntaxerror, char: %c\n", *c );
 			exit(1);
 		}
 	}
@@ -138,8 +130,8 @@ int nexttoken(expression* exp, const char *str, int pos){
 	// numbers don't need to be negativ, negativ values are already prepended with the operator '-' ..
 	// todo - check size of numtoken, reallocate
 	exp->numtoken++;
-	pos++;
-	return(pos);
+	c++;
+	return(c);
 }
 
 
@@ -149,14 +141,13 @@ int nexttoken(expression* exp, const char *str, int pos){
 /// 0 if a error occured.
 /* ------------------------------------------------------------------------- */
 expression* parse(const char*str, expression* exp){
-	int pos = 0;
 	//expression *exp = //malloc(sizeof(expression));
 	exp->numtoken = 0;
 	exp->bracketcount = 0;
-	int l = strlen(str);
 
-	while ( pos < l ){
-		pos = nexttoken(exp,str,pos);
+	char *p = str;
+	while (*p){
+		p = nexttoken(exp,p);
 	}
 
 	return(exp);
