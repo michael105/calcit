@@ -1,10 +1,12 @@
 #calcit (calc)
 
-.. a terminal calculator, mainly for developers, 
-able to parse nested expressions, branches,
-show results in octal, hexadecimal, binary. 
-(Show hexadecimal and binary the way it is internally stored,
-important for negative numbers)
+
+Part of an expression parser and calculator.
+
+This is a standalone version.
+
+Currently I'm about to rewrite some things,
+the ongoing work is in calc2.c
 
 Originally I did want to implement the option of having
 arithmetic expressions in config files, and to parse and compile them.
@@ -12,20 +14,16 @@ arithmetic expressions in config files, and to parse and compile them.
 speed up with 2*x..)
 
 Didn't write the config parser yet.
-;) So, here is a calculator instead. 
 
 The recursive calculation has been a special pain in the ass.
 
 It's tiny - 8k at OSX, compiled statically with minilib (optional)
 
-Might be quite performant, when e.g. using this to 1. enter a function,
-and 2. calculate the results for different inputs.
-
 
 6.3k linked statically with minilib, linux x64.
 
 
-Working: 
+Working: (calc)
 + - * / 
 % ^ $  	  ( Modulo, Power,  unsigned power-  ipowerui)
 & | ! ~ X (Binary ops: ~ is bitwise not,  X is XOR)
@@ -36,12 +34,6 @@ L R 		  Shift left / right
 
 All operations are in integer mode, so no floating point yet.
 Originally I did want to have some sort of scripting available for config files.
-Today I needed the XOR; so I did the port to OSX x64.
-Branches aren't thoroughly tested.
 
-Happy hacking
-
-
-Michael (Misc) Myer, 2013-2019
+Michael (Misc) Myer, 2013-2022
 misc.myer@zoho.com
-(my "programming enthusiastic persona"..) 
