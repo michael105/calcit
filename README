@@ -1,28 +1,37 @@
 #calcit (calc)
-.. a terminal calculator, able to parse nested expressions, branches
+
+.. a terminal calculator, mainly for developers, 
+able to parse nested expressions, branches,
+show results in octal, hexadecimal, binary. 
+(Show hexadecimal and binary the way it is internally stored,
+important for negative numbers)
+
+Originally I did want to implement the option of having
+arithmetic expressions in config files, and to parse and compile them.
+(For things like: if the mouse movement is faster than x/second, 
+speed up with 2*x..)
+
+Didn't write the config parser yet.
+;) So, here is a calculator instead. 
 
 The recursive calculation has been a special pain in the ass.
-Cant believe it's working.
-And it's tiny - 8k at OSX, compiled statically with minilib (optional)
+
+It's tiny - 8k at OSX, compiled statically with minilib (optional)
+
+Might be quite performant, when e.g. using this to 1. enter a function,
+and 2. calculate the results for different inputs.
+
 
 6.3k linked statically with minilib, linux x64.
 
 
-Redistribute as you wish, 
-but you are required to drop me an email.
-Thanks in advance.
-
-I don't guarantee any function, by the way.
-Although I've thoroughly tested.
-
-
 Working: 
 + - * / 
-% ^ $  	( Modulo, Power,  unsigned power-  ipowerui)
+% ^ $  	  ( Modulo, Power,  unsigned power-  ipowerui)
 & | ! ~ X (Binary ops: ~ is bitwise not,  X is XOR)
-L R 		Shift left / right
-< >     evals left side / right side, gives smaller / bigger value
-=				1, if equal
+L R 		  Shift left / right
+< >       evals left side / right side, gives smaller / bigger value
+=				  1, if equal
 
 
 All operations are in integer mode, so no floating point yet.
