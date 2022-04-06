@@ -41,6 +41,8 @@
 // have to dig up the gcc documentation.
 // another possilibty could be naked closures.
 // 
+//
+// currently I'm trying to understand, what I've done.
 
 
 //TODO: rewrite for double ...
@@ -48,6 +50,18 @@
 //TODO: variables: array[] of refs to the values in struct expression
 //-> müssen nicht bei jedem calculate-aufruf neu zugewiesen werden.
 // 
+//
+//
+// persistent:
+// assign variables. A,B,..X
+// assign functions. f1,f2,..
+// calculate f: f1(X=3,Y=1)
+//
+// interactive persistent mode
+// store parsed expressions to disk
+// load parsed expressions
+// multiple expressions, separated by ;
+//
 
 #define STANDALONE
 //#define DEBUG
@@ -152,7 +166,7 @@ int calculate_token(expression *exp, int cv, int n, int rem ){
 	int a;
 	int neg = 0;
 	int t = exp->token[exp->currenttoken];
-	INCTOKEN(exp->currenttoken);
+	INCTOKEN(exp->currenttoken); // increment index
 	dbgf("t1: %d\n",t);
 
 	if ( t == -'-' ){ // handle things like 4*(-5) 
@@ -178,11 +192,11 @@ int calculate_token(expression *exp, int cv, int n, int rem ){
 			dbgf("neg: %d\n",n);
 		} 
 		neg=1;
-	} else if ( t >=0 ){ // got a num. fetch operator.
+	} else if ( t >=0 ){ // got a num. fetch operator. NUMBER
 		n = t;
 		t = exp->token[exp->currenttoken];
 		dbgf("n: %d, t: %c\n",n,-t);
-		INCTOKEN(exp->currenttoken);
+		INCTOKEN(exp->currenttoken); // inc second time
 	} else {
 		switch ( t ){
 			case -'X': { n = *exp->x; if ( neg ) n=-n; //BUG: neg can't be set here.
@@ -261,7 +275,7 @@ int calculate( expression* exp ){
 
 	int erg = calculate_loop(exp,0);
 	if ( exp->bracketcount != 0 ){
-		fprintf(stderr,"Unmatched brackets in expression!\n");
+		fprintf(stderr,"Unmatched brackets in expression.\n");
 		exp->syntaxerror = 2;
 	}
 	return(erg);
@@ -273,7 +287,7 @@ int main( int argc, char *argv[] ){
 	dbgf("max: %u\n",__INT_MAX__);
 	// example of howto use..
 	if ( argc < 2 ){
-		printf( "calcit, a tiny text mode calculator\n"
+		printf( "calcit, an expression parser and calculator\n"
 				"BSD 3clause, Misc Myer (misc.myer@zoho.com), 2013-2022\n"
 				"\n"
 				"Usage: calc \"'expression'\"\n"
@@ -284,14 +298,14 @@ int main( int argc, char *argv[] ){
 				" L R     -- shift bits left, right\n"
 				" < > !   -- branching\n"
 				);
-		return(0);
+		exit(0);
 	}
 	expression exp; // sbrk todo
 	parse( argv[1], &exp );
 	int erg = calculate( &exp );
 	printf("%d\n", erg);
 
-	return(0);
+	exit(0);
 }
 #endif
 
