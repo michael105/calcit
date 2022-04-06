@@ -207,8 +207,8 @@ int calculate_token(expression *exp, int cv, int n, int rem ){
 						  break;}
 		case -'=': { if ( cv > 1 ){ exp->currenttoken--;} else { ( n == calculate_token(exp,2,0,0) ) ? (n=1) : (n=0);}break;}
 		case -'+': { if ( cv > 2 ){ exp->currenttoken--;} else { n += calculate_token(exp,3,0,0);} break;}
-		case -'-': { if ( cv > 3 ){ exp->currenttoken--;} else { n -= calculate_token(exp,3,0,0);} break;}
-		case -'*': { if ( cv > 3 ){ exp->currenttoken--;} else { n *= calculate_token(exp,3,0,0);} break;}
+		case -'-': { if ( cv > 2 ){ exp->currenttoken--;} else { n -= calculate_token(exp,3,0,0);} break;}
+		case -'*': { if ( cv > 3 ){ exp->currenttoken--;} else { n *= calculate_token(exp,4,0,0);} break;}
 		case -'/': { if ( cv > 3 ){ exp->currenttoken--;} else { n /= calculate_token(exp,4,0,0);} break;}
 		case -'%': { if ( cv > 3 ){ exp->currenttoken--;} else { n %= calculate_token(exp,4,0,0);} break;}
 #ifdef MLIB
