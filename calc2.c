@@ -62,6 +62,17 @@
 // load parsed expressions
 // multiple expressions, separated by ;
 //
+//
+//
+// -- option:
+//  rewrite this as a compiler.
+//  funnily, should be easy.
+//  needs just to replace the operators with a write of the according 
+//  opcodes to an executable string.
+//  variables, with x64, there are plenty. just the registers.
+//
+// muss mir mal assembly von gcc ansehen - abder ich hat bisher immer den eindruck,
+// da kommt eher umstaendliches bei raus.
 
 #define STANDALONE
 #define DEBUG
@@ -135,11 +146,8 @@ char* nexttoken(expression* exp, char *c ){
 }
 
 
-/* ------------------------------------------------------------------------- */
-/// parse the expression str.
-/// returns the "compiled" expression,
-/// 0 if a error occured.
-/* ------------------------------------------------------------------------- */
+// parse the expression str.
+// returns the "compiled" expression,
 expression* parse(const char*str, expression* exp){
 	//expression *exp = //malloc(sizeof(expression));
 	exp->numtoken = 0;
@@ -155,8 +163,6 @@ expression* parse(const char*str, expression* exp){
 
 
 // below are the functions for the calculation(s)
-
-
 #define INCTOKEN(A) exp->currenttoken++;\
 	if ( exp->currenttoken > exp->numtoken )\
 	return(n); // end of input reached.
@@ -179,31 +185,10 @@ int calculate_token(expression *exp, int cv, int n, int rem ){
 		INCTOKEN(exp->currenttoken); // inc second time
 	} 
 
-	if ( t == -4 ){ // handle things like 4*(-5) 
-		// syntaxerror if exp->currenttoken>scalar @c (!)
-		if ( rem == 0 ){
-			if ( exp->token[exp->currenttoken] >= 0 ){ 
-				n=-exp->token[exp->currenttoken];
-				INCTOKEN(exp->currenttoken);
-			} 
-
-			t=exp->token[exp->currenttoken];
-			INCTOKEN(exp->currenttoken);
-			dbgf("neg: %d\n",n);
-		} 
-		neg=1;
-	} 
-
-	dbgf(": n:%d t:%d cv: %d\n",n,t,cv);
-
-	if ( cv <= t ){
-		exp->currenttoken--;
-		return(n);
-	}
-
 	if ( t == -1 ){ // bracketopen
 		exp->bracketcount++; 
 		int tmp = calculate_loop(exp,cv);
+		dbgf("bracket, %d\n",tmp);
 		if ( neg ) 
 			return( -tmp );
 		return(tmp);
@@ -214,9 +199,16 @@ int calculate_token(expression *exp, int cv, int n, int rem ){
 		return(n);
 	}
 
-	int tmp = calculate_token(exp,t,0,0);
+	if ( cv <= t ){
+		exp->currenttoken--;
+		return(n);
+	}
 
-	const static void *_operators[] = { && op_sqr, &&op_mod, &&op_mult, &&op_div, 
+
+	int tmp = calculate_token(exp,t,0,0);
+	dbgf("tmp: %d, t: %d\n",tmp,t);
+
+	const static void *_operators[] = { &&op_sqr, &&op_mod, &&op_mult, &&op_div, 
 		&&op_minus, &&op_plus };
 	const static void **operators = _operators + sizeof(_operators) / sizeof(void*) +2 ;
 
@@ -255,11 +247,9 @@ int calculate_loop(expression* exp, int cv){
 	return(erg);
 }
 
-/* ------------------------------------------------------------------------- */
-/// calculate a parsed expression.
-/// Returns the result. 
-/// exp->syntaxerror is set to > 0, if an error occured.
-/* ------------------------------------------------------------------------- */
+// calculate a parsed expression.
+// Returns the result. 
+// exp->syntaxerror is set to > 0, if an error occured.
 int calculate( expression* exp ){
 	exp->bracketflag = exp->currenttoken = exp->syntaxerror = 0;
 
@@ -273,10 +263,7 @@ int calculate( expression* exp ){
 
 #ifdef STANDALONE
 int main( int argc, char *argv[] ){
-	dbgf("arg: %s\n",argv[1]);
-	dbgf("max: %u\n",__INT_MAX__);
-	// example of howto use..
-	if ( argc < 2 ){
+	if ( (argc < 2) || ( argv[1][0]=='-' && argv[1][1]=='h') ){
 		printf( "calcit, an expression parser and calculator\n"
 				"BSD 3clause, Misc Myer (misc.myer@zoho.com), 2013-2022\n"
 				"\n"
