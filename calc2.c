@@ -170,7 +170,7 @@ expression* parse(const char*str, expression* exp){
 /// recursive function,
 /// calculates the tokens.
 /// callen by calculate
-int calculate_token(expression *exp, int cv, int n, int rem ){
+int calculate_token(expression *exp, int cv, int n ){
 	dbgf("cv: %d, n: %d, rem: %d\n",cv,n,rem);
 	int a;
 	int neg = 0;
@@ -205,7 +205,7 @@ int calculate_token(expression *exp, int cv, int n, int rem ){
 	}
 
 
-	int tmp = calculate_token(exp,t,0,0);
+	int tmp = calculate_token(exp,t,0);
 	dbgf("tmp: %d, t: %d\n",tmp,t);
 
 	const static void *_operators[] = { &&op_sqr, &&op_mod, &&op_mult, &&op_div, 
@@ -233,15 +233,15 @@ op_sqr:
 // main loop for calculation.
 // also handles brackets
 int calculate_loop(expression* exp, int cv){
-	int erg = calculate_token( exp,0,0,0 );
+	int erg = calculate_token( exp,0,0 );
 	while ( (exp->currenttoken < exp->numtoken) && (!exp->bracketflag) ){ // <= ?
-		erg = calculate_token( exp,0,erg,1 );
+		erg = calculate_token( exp,0,erg ); // rem 1
 		dbgf("erg loop, got: %d\n",erg);
 	}
 	if ( exp->bracketflag ){
 		dbgf("Bracket out, got: %d\n",erg);
 		exp->bracketflag = 0;
-		erg = calculate_token( exp, cv, erg,1);
+		erg = calculate_token( exp, cv, erg ); // rem 1
 		dbgf("Bracket cont, got: %d\n",erg);
 	}
 	return(erg);
