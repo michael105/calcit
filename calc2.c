@@ -4,8 +4,10 @@
 //#include <math.h>
 #endif
 
-// An expression parser and calculator
-// original intent did had been to write something
+// An expression parser and calculator with (in theory) unlimited brackets.
+// Brackets are only limited by the stack.
+//
+// The original intent did had been to write something
 // like a mathematical expression parser for configuration files.
 //
 // parse some formulas once, while reading the configuration;
@@ -18,11 +20,6 @@
 // would, however work. 
 // And I wouldn't have thought I'd need to. however.
 //
-// needs some cleanup. And there are variables missing.
-// (So the original main goal, well.)
-// But since the recursive parsing and nested calculation has been done,
-// this might be trivial.
-//
 // just now I'm about to clean and document the code a bit.
 //
 // originally I did plan to implement a mouse driver,
@@ -31,18 +28,6 @@
 // with mouse movements.
 // Therefore a low latency has been my main concern.
 //
-// Just now I'm wondering, wheter to replace the 
-// operator case table with a jumptable
-// or, albite unusual, with a goto label table;
-// so the operators can be assigned at parse time to 
-// the according symbols.
-// spares one branch.
-// 
-// have to dig up the gcc documentation.
-// another possilibty could be naked closures.
-// 
-//
-// currently I'm trying to understand, what I've done.
 
 
 //TODO: rewrite for double ...
@@ -84,15 +69,37 @@
 #define dbgf(...)
 #endif
 #endif
+#define dbgf2(...)
+
+#define TOKENEND -0xFFFF
+// number of preallocated tokens 
+#define PREALLOC 32
+
+// executed on errors
+#define error(exp,number,fmt, ...) \
+	{ fprintf(stderr,fmt __VA_OPT__(,) __VA_ARGS__);\
+	exit(number); }
+
+#if 0
+#define error(exp,number,fmt, ...) \
+	{ snprintf(exp->errormsg,32,fmt __VA_OPT__(,) __VA_ARGS__);\
+	exp->error = number;\
+	return(exp); }
+#endif
+
+
 
 typedef struct _expression { 
-	int token[1024]; // better allocate dynamically. sbrk.
+	char errormsg[32];
+	int var[26];
 	int numtoken;
-	int currenttoken;
 	int bracketflag;
+	int flag;
 	int bracketcount;
-	int syntaxerror;
-	int *x;
+	int error;
+	int* tokenend;
+	int* p;
+	int* token;
 } expression;
 
 int calculate_loop(expression* exp, int cv);
@@ -100,141 +107,244 @@ int calculate_loop(expression* exp, int cv);
 
 // parsing
 
-// parse input into tokens, write them to exp
-char* nexttoken(expression* exp, char *c ){
-	const static char op[] = { 0, '(', ')', '+', '-', '/', '*', '%', '^' };
-
-	// Weed out space
-	while ( *c == 32 ){
-		c++;
-		if ( !*c )
-			return(c);
-	}
-
-	// number
-	if ( ( *c >='0' ) && ( *c <='9' ) ){
-		int i = 0; 
-		do {
-			i = i*10 + ( *c - '0' );
-			c++;
-			} while ( ( *c >='0' ) && ( *c <='9' ) );
-		exp->token[exp->numtoken] = i;
-		exp->numtoken++;
-		printf("i: %d\n",i);
-		return( c );
-	}
-
-	// operator
-	int opi = 1;
-
-	while( op[opi] != *c ){
-		opi ++;
-		if ( opi >= (sizeof(op)/sizeof(char)) ){
-			//printf("Syntaxerror at pos %d, char: %c\n", 1, *c );
-			printf("Syntaxerror, char: %c\n", *c );
-			exit(1);
-		}
-	}
-
-	exp->token[exp->numtoken] = -opi; // operators are negativ. 
-
-	// numbers don't need to be negativ, negativ values are already prepended with the operator '-' ..
-	// todo - check size of numtoken, reallocate
+// append a token, allocate memory when needed
+int add_token( expression* exp, int i ){
+	*(exp->p) = i;
+	exp->p++;
 	exp->numtoken++;
-	c++;
-	return(c);
+	
+	if ( exp->p == exp->tokenend ){
+		exp->token = realloc( exp->token, (exp->tokenend - exp->token) + PREALLOC );
+		if ( ! exp->token ){
+			error(exp,2, "Unable to allocate memory\n" );
+		}
+		dbgf("allocate: old: %x %d", exp->tokenend, (exp->tokenend - exp->token) ); 
+		exp->tokenend = exp->token + (exp->tokenend - exp->token) + PREALLOC; 
+		dbgf("  new: %x\n",exp->tokenend );
+	}
+	return(0);
 }
 
+const static char* op_list = "()+-/*%^&|X~";
+#define BROPEN -1
+#define BRCLOSE -2
+#define PLUS -3
+#define MINUS -4
+#define MULT -6
+
+
+const char* next_token(expression *exp, const char *c, const char *str ){
+		// strip spaces
+		if ( *c==32 ){
+			while ( *c == 32 )
+				c++;
+		}
+		
+		if ( *c == 0 )
+			return(c);
+
+		// numbers
+		if ( ( *c >='0' ) && ( *c <='9' ) ){
+			int i = 0; 
+			do {
+				i = i*10 + ( *c - '0' );
+				c++;
+			} while ( ( *c >='0' ) && ( *c <='9' ) );
+
+			if ( exp->flag ){
+				add_token(exp,MULT);
+			}
+
+			add_token(exp,i);
+			dbgf2("i: %d\n",i);
+			exp->flag=1;
+			return(c);
+		}
+
+		// -, with preceding operator - escape with brackets
+		if ( *c=='-' && ( exp->p > exp->token ) && ( *(exp->p-1) < -2 ) && ( *(exp->p-1) > -0xFF ) ){
+			exp->flag=1;
+			add_token( exp, BROPEN ); // (
+			add_token( exp, MINUS ); // -
+			c++;
+			c = next_token( exp, c, str );
+			add_token( exp, BRCLOSE ); // )
+			return(c);
+		}
+
+		// variables
+		if ( ( *c >= 'a' ) && ( *c <= 'z' ) ){
+			if ( exp->flag ){
+				add_token(exp,MULT);
+			}
+			add_token(exp, (*c - 'a' ) | INT_MIN ); // set leftmost bit
+			exp->flag=1;
+		} else {
+			// operator
+			const char *p_op = op_list;
+
+			while( *p_op != *c ){
+				p_op ++;
+				if ( *p_op == 0 ){
+					error(exp,1, "Syntaxerror at pos %d, char: %c\n", c-str+1, *c );
+				}
+			}
+
+			if ( *c == ')' ){
+				exp->bracketcount--;
+				exp->flag=1;
+				if ( exp->bracketcount < 0 ){
+					error( exp,3, "Unmatched closing bracket at pos %d\n", c-str+1 );
+				}
+			} else if ( *c == '(' ){
+				if ( exp->flag ){
+					add_token(exp,MULT);
+				}
+				exp->bracketcount++;
+				exp->flag=0;
+			} else {
+				exp->flag = 0;
+			}
+
+			add_token( exp, (op_list - p_op ) -1 ); // operators are negative tokens 
+			// numbers aren't negativ, 
+			// negativ values are prepended with the operator '-' 
+		}
+
+
+	return(++c);
+}
 
 // parse the expression str.
 // returns the "compiled" expression,
 expression* parse(const char*str, expression* exp){
-	//expression *exp = //malloc(sizeof(expression));
 	exp->numtoken = 0;
+	exp->flag = 0;
 	exp->bracketcount = 0;
+	exp->token = malloc( sizeof(int) * PREALLOC );
+	exp->tokenend = exp->token + PREALLOC;
+	exp->p = exp->token;
 
-	char *p = str;
-	while (*p){
-		p = nexttoken(exp,p);
+	const char *c = str;
+	while (*c && ( exp->error == 0 )){
+		c = next_token( exp, c, str );
 	}
 
+	if ( exp->error )
+		return(exp);
+	
+	if ( exp->bracketcount ){
+		error( exp, 4, "Missing closing bracket\n");
+	}
+
+	add_token(exp,PLUS);
+	*(exp->p) = TOKENEND;
 	return(exp);
 }
 
 
+void print_tokens(expression *exp){
+	for ( int *t = exp->token; (*(t+1)!=TOKENEND); *t++ ){
+		if ( *t>=0 ){
+			printf("%d",*t);
+		} else if ( *t> -0xFF ){
+			printf( AC_LBLUE " %c " AC_NORM ,op_list[-*t-1]);
+		} else {
+			printf("%c", (*t & (~INT_MIN)) + 'a' );
+		}
+	}
+	printf("\n");
+}
+
+
 // below are the functions for the calculation(s)
-#define INCTOKEN(A) exp->currenttoken++;\
-	if ( exp->currenttoken > exp->numtoken )\
-	return(n); // end of input reached.
+#define INCTOKEN exp->p++;\
+	if ( *(exp->p) == TOKENEND )\
+		return(n); // end of input reached.
 
 /// recursive function,
 /// calculates the tokens.
 /// callen by calculate
 int calculate_token(expression *exp, int cv, int n ){
-	dbgf("cv: %d, n: %d, rem: %d\n",cv,n,rem);
-	int a;
-	int neg = 0;
-	int t = exp->token[exp->currenttoken];
-	INCTOKEN(exp->currenttoken); // increment index
-	dbgf("t1: %d\n",t);
+	int tmp = 0;
+	int t = *(exp->p);
+	dbgf("cv: %d, n: %d, t: %d\n",cv,n,t);
+
+	if ( (t<BRCLOSE) && (t>-256) && ( cv <= t ) ){ // op
+		return(n);
+	}
+
+	INCTOKEN; // increment index
 
 	if ( t >=0 ){ // token is a number
-		n = t;
-		t = exp->token[exp->currenttoken];
-		dbgf("n: %d, t: %c\n",n,-t);
-		INCTOKEN(exp->currenttoken); // inc second time
+		dbgf("number: %d\n",t);
+		return( calculate_token(exp,cv,t) );
 	} 
 
-	if ( t == -1 ){ // bracketopen
-		exp->bracketcount++; 
-		int tmp = calculate_loop(exp,cv);
-		dbgf("bracket, %d\n",tmp);
-		if ( neg ) 
-			return( -tmp );
-		return(tmp);
-	}
-	if ( t == -2 ){ // bracketclose
-		exp->bracketflag = 1; 
-		exp->bracketcount--;
-		return(n);
+	if ( t < ( INT_MIN + 27 ) ){ // variable
+		return( calculate_token(exp,cv, exp->var[t&31]) );
+	} 
+
+	if ( t<-2 ){ // no bracket, but operator
+		// recursion - calculate dependent on math. order ( * before +, % before -, ..)
+		tmp = calculate_token(exp,t,0);
 	}
 
-	if ( cv <= t ){
-		exp->currenttoken--;
-		return(n);
-	}
+#ifdef DEBUG
+	if ( exp->bracketcount )
+		dbgf( AC_YELLOW " %d ", exp->bracketcount );
+	dbgf( AC_BLUE " %d %c %d\n" AC_NORM ,n,op_list[-t-1],tmp);
+#endif
+
+	const static void *_operators[] = { &&op_inv, &&op_xor, &&op_or, &&op_and, 
+		&&op_sqr, &&op_mod, &&op_mult, &&op_div, 
+		&&op_minus, &&op_plus, &&op_brclose, &&op_bropen };
+	const static void **operator = _operators + sizeof(_operators) / sizeof(void*);
 
 
-	int tmp = calculate_token(exp,t,0);
-	dbgf("tmp: %d, t: %d\n",tmp,t);
+	goto *operator[t];
 
-	const static void *_operators[] = { &&op_sqr, &&op_mod, &&op_mult, &&op_div, 
-		&&op_minus, &&op_plus };
-	const static void **operators = _operators + sizeof(_operators) / sizeof(void*) +2 ;
-
-
-	goto *operators[t];
-
+op_bropen:
+#ifdef DEBUG
+	exp->bracketcount++;
+#endif
+	return( calculate_loop(exp,cv) );
+op_brclose:
+#ifdef DEBUG
+	exp->bracketcount--;
+#endif
+	exp->bracketflag = 1; 
+	return(n);
 op_plus:	
 	return( n + tmp );
 op_minus:	
 	return( n - tmp );
+op_div:
+	if ( tmp==0 )
+		error(exp,5, "Division by zero\n");
+	return( n / tmp );
 op_mult:
 	return( n * tmp );
-op_div:
-	return( n / tmp );
 op_mod:
 	return( n % tmp );
 op_sqr:
 	return( ipowui( n, tmp ) );
+op_and:
+	return( n & tmp );
+op_or:
+	return( n | tmp );
+op_xor:
+	return( n ^ tmp );
+op_inv:
+	return( ~tmp );
 
 }
 
 // main loop for calculation.
 // also handles brackets
 int calculate_loop(expression* exp, int cv){
-	int erg = calculate_token( exp,0,0 );
-	while ( (exp->currenttoken < exp->numtoken) && (!exp->bracketflag) ){ // <= ?
+	int erg = 0; //calculate_token( exp,0,0 );
+	while ( ( *(exp->p)!= TOKENEND ) && (!exp->bracketflag) ){ // <= ?
 		erg = calculate_token( exp,0,erg ); // rem 1
 		dbgf("erg loop, got: %d\n",erg);
 	}
@@ -249,16 +359,11 @@ int calculate_loop(expression* exp, int cv){
 
 // calculate a parsed expression.
 // Returns the result. 
-// exp->syntaxerror is set to > 0, if an error occured.
+// exp->error is set to > 0, if an error occured.
 int calculate( expression* exp ){
-	exp->bracketflag = exp->currenttoken = exp->syntaxerror = 0;
-
-	int erg = calculate_loop(exp,0);
-	if ( exp->bracketcount != 0 ){
-		fprintf(stderr,"Unmatched brackets in expression.\n");
-		exp->syntaxerror = 2;
-	}
-	return(erg);
+	exp->bracketflag = exp->error = exp->flag = 0;
+	exp->p = exp->token;
+	return( calculate_loop(exp,0) );
 }
 
 #ifdef STANDALONE
@@ -270,17 +375,27 @@ int main( int argc, char *argv[] ){
 				"Usage: calc \"'expression'\"\n"
 				"\nImplemented operations:\n"
 				" + - / *\n"
-				" %% ^ $   -- modulo, square, square unsigned\n"
-				" X & |   -- bitwise XOR, AND, OR, NOT\n"
-				" L R     -- shift bits left, right\n"
-				" < > !   -- branching\n"
+				" %% ^       -- modulo, square\n"
+				" X & | ~   -- bitwise XOR, AND, OR, INVERSE\n"
+				" a..z      -- variables\n"
+				" Lx Rx     -- shift bits left, right by x\n"
+				" x<y x>y   -- return 1 when true, 0 when false\n"
+				" xx ? yy : zz  -- if xx == 0 return yy; else zz\n"
 				);
 		exit(0);
 	}
 	expression exp; // sbrk todo
 	parse( argv[1], &exp );
-	int erg = calculate( &exp );
-	printf("%d\n", erg);
+	printf("   ");
+	print_tokens(&exp);
+	int erg;
+	
+	exp.var[1] = 2;
+	for ( int a = 0; a<3; a++ ){
+		exp.var[0] = a;
+		erg= calculate( &exp );
+		printf(AC_LGREEN"%d\n"AC_NORM, erg);
+	}
 
 	exit(0);
 }
