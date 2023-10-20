@@ -1,11 +1,18 @@
+#if 0
+COMPILE malloc realloc printf
+
+return
+#endif
+
 #ifndef MLIB
 #include <stdio.h>
 #include <string.h>
 //#include <math.h>
 #endif
 
+
+#define D printf("l: %d\n",__LINE__);
 // An expression parser and calculator with (in theory) unlimited brackets.
-// Brackets are only limited by the stack.
 //
 // The original intent did had been to write something
 // like a mathematical expression parser for configuration files.
@@ -28,7 +35,14 @@
 // with mouse movements.
 // Therefore a low latency has been my main concern.
 //
+// 
 
+
+// Somehow .. the older code in calc.c is much smaller, and more tight.
+// Don't know why the parsing part bloated up that much.
+// If i remember right, some unlucky trouble with things like 6*-3 (two adjacent operators )
+// and 3(4+a) (number and bracket.
+// I'm not that satisfied. Eventually I would have better set up rules for the terms.
 
 //TODO: rewrite for double ...
 
@@ -59,8 +73,8 @@
 // muss mir mal assembly von gcc ansehen - abder ich hat bisher immer den eindruck,
 // da kommt eher umstaendliches bei raus.
 
-#define STANDALONE
-#define DEBUG
+//#define STANDALONE
+//#define DEBUG
 
 #if 1
 #ifdef DEBUG
@@ -104,12 +118,10 @@ typedef struct _expression {
 	token_t* token;
 } expression;
 
-
 void init_exp(expression *exp){
 	exp->numtoken = 0;
 	exp->flag = 0;
 	exp->bracketcount = 0;
-	//exp->token = malloc( sizeof(token_t) * PREALLOC );
 	exp->tokenend = exp->token + PREALLOC;
 	exp->p = exp->token;
 }
@@ -214,7 +226,7 @@ const char* next_token(expression *exp, const char *c, const char *str ){
 			int *p;
 			for ( p = exp->p; *p!= IFLEN; p-- ){
 				if ( p == exp->token )
-					error( exp,6, "Unmatched else at pos %d\n", c-str+1 );
+					error( exp,6, "Unmatched else at pos %d\n", (c-str+1) );
 			}
 			*p = (exp->p - p) -1; //save len of first option
 			exp->flag = 0;
@@ -225,7 +237,7 @@ const char* next_token(expression *exp, const char *c, const char *str ){
 			int *p;
 			for ( p = exp->p; *p!= IFLEN; p-- ){
 				if ( p == exp->token )
-					error( exp,6, "Unmatched else at pos %d\n", c-str+1 );
+					error( exp,6, "Unmatched else at pos %d\n", (c-str+1) );
 			}
 			*p = (exp->p - p) -1; //save len of second option
 			exp->flag = 0;
@@ -249,7 +261,7 @@ const char* next_token(expression *exp, const char *c, const char *str ){
 			while( *p_op != *c ){
 				p_op ++;
 				if ( *p_op == 0 ){
-					error(exp,1, "Syntaxerror at pos %d, char: %c\n", c-str+1, *c );
+					error(exp,1, "Syntaxerror at pos %d, char: %c\n", (c-str+1), *c );
 				}
 			}
 
@@ -257,7 +269,7 @@ const char* next_token(expression *exp, const char *c, const char *str ){
 				exp->bracketcount--;
 				exp->flag=1;
 				if ( exp->bracketcount < 0 ){
-					error( exp,3, "Unmatched closing bracket at pos %d\n", c-str+1 );
+					error( exp,3, "Unmatched closing bracket at pos %d\n", (c-str+1) );
 				}
 			} else if ( *c == '(' ){
 				if ( exp->flag ){ // bracket with precding number or variable
@@ -281,12 +293,14 @@ const char* next_token(expression *exp, const char *c, const char *str ){
 // parse the expression str.
 // returns the "compiled" expression
 expression* parse(const char*str, expression* exp){
+	D
 	init_exp(exp);
-
+D
 	add_token(exp,BROPEN);
-
+D
 	const char *c = str;
 	while (*c && ( exp->error == 0 )){
+		D
 		c = next_token( exp, c, str );
 	}
 
@@ -465,20 +479,20 @@ int main( int argc, char *argv[] ){
 				);
 		exit(0);
 	}
-	expression *exp = new_exp();
-	parse( argv[1], exp );
+	expression exp; // sbrk todo
+	parse( argv[1], &exp );
 	printf("   ");
-	print_tokens(exp);
+	print_tokens(&exp);
 	int erg;
 	
-	exp->var[1] = 2;
+	exp.var[1] = 2;
 	for ( int a = 0; a<3; a++ ){
-		exp->var[0] = a;
-		erg= calculate( exp );
+		exp.var[0] = a;
+		erg= calculate( &exp );
 		printf(AC_LGREEN"%d\n"AC_NORM, erg);
 	}
 
-	print_tokens(exp);
+	print_tokens(&exp);
 	exit(0);
 }
 #endif

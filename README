@@ -36,5 +36,31 @@ L R 		  Shift left / right
 All operations are in integer mode, so no floating point yet.
 Originally I did want to have some sort of scripting available for config files.
 
-Michael (Misc) Myer, 2013-2022
-misc.myer@zoho.com
+
+
+------
+
+
+So, now there's also 'hal300'...
+Not finished yet. 
+But at least able to spit out the results in decimal, hex, oct and binary.
+
+There might be the possibility to store functions.
+I forgot the syntax.
+
+calc.c, and calc2.c/libcalc.c do have different approaches.
+
+Both are recursive, but while calc.c uses a case statement,
+the latter ones do have jumptables.
+
+The current version of linenoise didn't work, some trouble
+with the columns.
+
+Here's a fixed one.
+
+BSD License.
+
+
+misc 2013-2023
+misc7@posteo.net
+
