@@ -90,9 +90,11 @@ return
 #define PREALLOC 32
 
 // executed on errors
+#ifndef error
 #define error(exp,number,fmt, ...) \
 	{ fprintf(stderr,fmt __VA_OPT__(,) __VA_ARGS__);\
 	exit(number); }
+#endif
 
 #if 0
 #define error(exp,number,fmt, ...) \
